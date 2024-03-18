@@ -100,6 +100,8 @@ class DNSSniffer():
     def checkNumOfRequests(packet):
         if DNSSniffer.numOfRequests == 0:
             DNSSniffer.isRunning = False #set isRunning to false
+            DNSSniffer.suspiciousDomains.clear() #clear suspiciousDomains list for next scan
+            DNSSniffer.numOfRequests = 4 #set the numOfRequests back to 4 for next scan
             printMessage('Reached maximum capacity of requests for domain report, stopping scan..\n', 'info')
             return True #return true if numOfRequests is 0 indicating when to stop sniffing
         else:
