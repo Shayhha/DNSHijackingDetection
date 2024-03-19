@@ -1,4 +1,5 @@
 import re
+import base64
 import datetime
 import requests
 from scapy.all import TCP, UDP, IP, DNS, DNSQR, DNSRR, send, sniff
@@ -82,6 +83,7 @@ class DNSSniffer():
                     printMessage(f'Found suspicious DNS response packet that includes base64 encoded data: \033[93m{DNSResponsPkt.responseData}\033[0m', 'success')
                     print('========== DNS Packet Info ==========')
                     DNSResponsPkt.showInfo() #print packet info
+                    print(f'Decoded Response Data: {decodeBase64(DNSResponsPkt.responseData)}') #print decoded response data
                     print('========== Domain Report ==========')
                     getDomainReport(DNSResponsPkt.responseName) #get domain report from virusTotal for suspicious domain
                     print('=====================================\n')
@@ -197,6 +199,15 @@ def toDatetime(timestamp):
         return datetime.datetime.fromtimestamp(timestamp) #return the date with datetime function
     return None
 
+
+#Function for decoding base64 string
+def decodeBase64(dataStr):
+    try:
+        decodedStr = base64.b64decode(dataStr).decode('utf-8') #decode the base64 string
+        return decodedStr #return decoded string
+    except Exception as e: #if exception is thrown
+        return f'Error decoding base64 string: {str(e)}' #return an error
+    
 
 #Function for checking if the given string is encoded in base64
 def isBase64(dataStr):
