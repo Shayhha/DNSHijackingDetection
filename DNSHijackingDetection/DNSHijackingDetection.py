@@ -33,8 +33,8 @@ class DNSResponse():
         output += f'Response Class: {self.responseClass}\n' #response class of packet
         output += f'Num Responses: {self.numResponses}\n' #number of responses inside packet
         if self.responseData != '': #if responseData isnt empty we print it
-            output += f'Response Data: {self.responseData}' #responseData is the given text inside the dns response payload
-        print(output) #print the packet
+            output += f'Response Data: \033[93m{self.responseData}\033[0m' #responseData is the given text inside the dns response payload
+        print(output) #print the packet 
 
 #=================================================================DNSResponse-END================================================================#
 
@@ -80,17 +80,17 @@ class DNSSniffer():
                 if isBase64(DNSResponsPkt.responseData) and DNSResponsPkt.responseName not in DNSSniffer.suspiciousDomains:
                     DNSSniffer.suspiciousDomains.append(DNSResponsPkt.responseName)
                     DNSSniffer.numOfRequests -= 1
-                    printMessage(f'Found suspicious DNS response packet that includes base64 encoded data: \033[93m{DNSResponsPkt.responseData}\033[0m', 'success')
+                    printMessage(f'Found suspicious DNS response packet that includes base64 encoded data: \033[95m{DNSResponsPkt.responseData}\033[0m', 'success')
                     print('========== DNS Packet Info ==========')
                     DNSResponsPkt.showInfo() #print packet info
-                    print(f'Decoded Response Data: {decodeBase64(DNSResponsPkt.responseData)}') #print decoded response data
+                    print(f'Decoded Response Data: \033[93m{decodeBase64(DNSResponsPkt.responseData)}\033[0m') #print decoded response data
                     print('========== Domain Report ==========')
                     getDomainReport(DNSResponsPkt.responseName) #get domain report from virusTotal for suspicious domain
                     print('=====================================\n')
                 elif isCommand(DNSResponsPkt.responseData) and DNSResponsPkt.responseName not in DNSSniffer.suspiciousDomains:
                     DNSSniffer.suspiciousDomains.append(DNSResponsPkt.responseName)
                     DNSSniffer.numOfRequests -= 1
-                    printMessage(f'Found suspicious DNS response packet that includes valid command: \033[91m{DNSResponsPkt.responseData}\033[0m', 'success')
+                    printMessage(f'Found suspicious DNS response packet that includes valid command: \033[95m{DNSResponsPkt.responseData}\033[0m', 'success')
                     print('========== DNS Packet Info ==========')
                     DNSResponsPkt.showInfo() #print packet info
                     print('========== Domain Report ==========')
@@ -159,8 +159,8 @@ def sendDNSPackets():
 
 #Function for sending random DNS TXT response packets for simulating attack
 def sendRandomDNSPackets():
-    suspiciousDomains = [] #need to add domains using nslookup
-    suspiciousResponses = [] #need to add random base64 and commands to here
+    suspiciousDomains = ['news-spot.live', 'onerecycleclub.com', 'todaysport.live', 'microsoft-security-updates.com'] #need to add domains using nslookup
+    suspiciousResponses = ['bmV0c2ggaW50ZXJmYWNlIGlwIHNob3cgZG5zc2VydmVycw==', 'ipconfig /flushdns', 'netsh interface ipv4 show dns', 'bmV0c2ggaW50ZXJmYWNlIGlwdjQgZGVsZXRlIGRuc3NlcnZlciAiRXRoZXJuZXQiIDE5Mi4xNjguMS4x'] #need to add random base64 and commands to here
     print('DNS Response Traffic Simulator\n')
     sourceIp = input('Enter source IP: ')
     destinationIp = input('Enter destination IP: ')
