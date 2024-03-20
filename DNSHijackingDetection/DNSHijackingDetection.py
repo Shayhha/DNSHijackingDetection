@@ -159,14 +159,13 @@ def sendDNSPackets():
 
 #Function for sending random DNS TXT response packets for simulating attack
 def sendRandomDNSPackets():
-    suspiciousDomains = ['news-spot.live', 'onerecycleclub.com', 'todaysport.live', 'microsoft-security-updates.com'] #need to add domains using nslookup
-    suspiciousResponses = ['bmV0c2ggaW50ZXJmYWNlIGlwIHNob3cgZG5zc2VydmVycw==', 'ipconfig /flushdns', 'netsh interface ipv4 show dns', 'bmV0c2ggaW50ZXJmYWNlIGlwdjQgZGVsZXRlIGRuc3NlcnZlciAiRXRoZXJuZXQiIDE5Mi4xNjguMS4x'] #need to add random base64 and commands to here
+    suspiciousDomains = [('3.141.96.53', 'news-spot.live'), ('172.67.154.10', 'onerecycleclub.com'), ('35.186.223.180', 'todaysport.live'), ('34.98.99.30', 'microsoft-security-updates.com')] #list represents domains that are known to be malicious
+    suspiciousResponses = ['bmV0c2ggaW50ZXJmYWNlIGlwIHNob3cgZG5zc2VydmVycw==', 'ipconfig /flushdns', 'netsh interface ipv4 show dns', 'bmV0c2ggaW50ZXJmYWNlIGlwdjQgZGVsZXRlIGRuc3NlcnZlciAiRXRoZXJuZXQiIDE5Mi4xNjguMS4x'] #list represents suspicious data that isn't typical in dns txt packets
     print('DNS Response Traffic Simulator\n')
-    sourceIp = input('Enter source IP: ')
     destinationIp = input('Enter destination IP: ')
     printMessage('Sending random DNS response packets...', 'info')
     for i, (domain, response) in enumerate(zip(suspiciousDomains, suspiciousResponses)): #iterate over both lists to send packets
-        sendDNSTXTResponse(sourceIp, destinationIp, domain, response) #call our fucntion to send the packet
+        sendDNSTXTResponse(domain[0], destinationIp, domain[1], response) #call our fucntion to send the packet
         printMessage(f'DNS packet no. {i + 1} sent..', 'info')
     printMessage('Finished sending DNS packets.', 'success')
     
