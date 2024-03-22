@@ -261,11 +261,15 @@ def getDomainReport(domain):
     totalVotes = data['data']['attributes'].get('total_votes') #represents total votes (malicious or harmless) for the domain by VirusTotal commuinty
     reputation = data['data']['attributes'].get('reputation') #represents the reputation of the website (if higher number it means its safe)
     creationDate = toDatetime(data['data']['attributes'].get('creation_date')) #represents domian's date of creation 
-    output = f'Domain name: {domain}\n'
-    output += f'Last analysis stats: {lastAysStats}\n'
-    output += f'Total votes: {totalVotes}\n'
-    output += f'Reputation score: {reputation}\n'
-    output += f'Creation date: {creationDate}'
+    output = f'Domain Name: {domain}\n' #add domain name to output
+    output += f'Last Analysis Stats:\n' #add analysis stats 
+    for key, value in lastAysStats.items(): #iterate over dict and add each value to output
+        output += f' - {key.capitalize()}: {value}\n'
+    output += f'Total Votes:\n'
+    for key, value in totalVotes.items(): #iterate over dict and add each value to output
+        output += f' - {key.capitalize()}: {value}\n'
+    output += f'Reputation Score: {reputation}\n' #add score to output
+    output += f'Creation Date: {creationDate}' #add creation date to output
     print(output) #print the domain report
     
  
