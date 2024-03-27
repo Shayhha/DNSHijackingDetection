@@ -28,7 +28,7 @@ class DNSResponse():
         output += f'Source IP: {self.srcIp} | Port: {self.srcPort}\n' #source ip and port
         output += f'Destination IP: {self.dstIp} | Port: {self.dstPort}\n' #destination ip and port
         output += f'ID: {self.pktid}\n' #id of the dns packet
-        output += f'Response Name: {self.responseName}\n' #response name like domain of website
+        output += f'Response Name: \033[93m{self.responseName}\033[0m\n' #response name like domain of website
         output += f'Response Type: {self.responseType}\n' #response type of dns packet like A, MX or TXT records
         output += f'Response Class: {self.responseClass}\n' #response class of packet
         output += f'Num Responses: {self.numResponses}\n' #number of responses inside packet
@@ -81,22 +81,25 @@ class DNSSniffer():
                     DNSSniffer.suspiciousDomains.append(DNSResponsPkt.responseName)
                     DNSSniffer.numOfRequests -= 1
                     printMessage(f'Found suspicious DNS response packet that includes base64 encoded data: \033[95m{DNSResponsPkt.responseData}\033[0m', 'success')
-                    print('========== DNS Packet Info ==========')
+                    print('============================== DNS Packet Info ==============================')
                     DNSResponsPkt.showInfo() #print packet info
                     print(f'Decoded Response Data: \033[93m{decodeBase64(DNSResponsPkt.responseData)}\033[0m') #print decoded response data
-                    print('========== Domain Report ==========')
-                    getDomainReport(DNSResponsPkt.responseName) #get domain report from virusTotal for suspicious domain
-                    print('=====================================\n')
+                    print('=============================== Domain Report ===============================')
+                    domainReportDict = getDomainReport(DNSResponsPkt.responseName) #get domain report dictionary from virusTotal 
+                    printDomainReport(domainReportDict) #print domain report
+                    print('=============================================================================\n\n')
                 elif isCommand(DNSResponsPkt.responseData) and DNSResponsPkt.responseName not in DNSSniffer.suspiciousDomains:
                     DNSSniffer.suspiciousDomains.append(DNSResponsPkt.responseName)
                     DNSSniffer.numOfRequests -= 1
                     printMessage(f'Found suspicious DNS response packet that includes valid command: \033[95m{DNSResponsPkt.responseData}\033[0m', 'success')
-                    print('========== DNS Packet Info ==========')
+                    print('============================== DNS Packet Info ==============================')
                     DNSResponsPkt.showInfo() #print packet info
-                    print('========== Domain Report ==========')
-                    getDomainReport(DNSResponsPkt.responseName) #get domain report from virusTotal for suspicious domain
-                    print('=====================================\n')
+                    print('=============================== Domain Report ===============================')
+                    domainReportDict = getDomainReport(DNSResponsPkt.responseName) #get domain report dictionary from virusTotal 
+                    printDomainReport(domainReportDict) #print domain report
+                    print('=============================================================================\n\n')
          
+
     #Function for checking the state of numOfRequests
     @staticmethod
     def checkNumOfRequests(packet):
@@ -109,6 +112,7 @@ class DNSSniffer():
         else:
             return False #else we continue the sniffing
     
+
     #Function for initializing the packet sniffing with desired interface and filter
     @staticmethod
     def initSniff(interface, sniffFilter):
@@ -178,6 +182,8 @@ def printMessage(strData, msgType='info'):
         print(f'\033[92m[+]\033[0m {strData}')
     elif msgType == 'fail':
         print(f'\033[91m[-]\033[0m {strData}')
+    elif msgType == 'warning':
+        print(f'\033[91m[*]\033[0m {strData}')
         
 
 #Function for converting a data type like list or byte to string
@@ -198,6 +204,15 @@ def toDatetime(timestamp):
         return datetime.datetime.fromtimestamp(timestamp) #return the date with datetime function
     return None
 
+
+#Function for checking if given date has been created recently
+def checkDatetime(date):
+    if date is not None:
+        currentDate = datetime.datetime.now() #represents current date
+        previousDate = currentDate - datetime.timedelta(days=365*2) #represents the date two years ago
+        return date > previousDate #return if given date was created recently
+    return False
+ 
 
 #Function for decoding base64 string
 def decodeBase64(dataStr):
@@ -254,25 +269,50 @@ def getDomainReport(domain):
         'x-apikey': '124ee3170d38cfcf9154796c8ffb8c0faad6381592bd612a5c84932e3cf543a7' #VirusTotal api key
     }
     response = requests.get(url, headers=headers) #sent the http request to VirusTotal 
-    data = response.json() #represents a dict that includes info from domain report
-
-    #these are parameters we're interested in for our domian report
-    lastAysStats = data['data']['attributes'].get('last_analysis_stats') #represents the amount of browsers flagged the doamin as malicious or harmless etc.
-    totalVotes = data['data']['attributes'].get('total_votes') #represents total votes (malicious or harmless) for the domain by VirusTotal commuinty
-    reputation = data['data']['attributes'].get('reputation') #represents the reputation of the website (if higher number it means its safe)
-    creationDate = toDatetime(data['data']['attributes'].get('creation_date')) #represents domian's date of creation 
-    output = f'Domain Name: {domain}\n' #add domain name to output
-    output += f'Last Analysis Stats:\n' #add analysis stats 
-    for key, value in lastAysStats.items(): #iterate over dict and add each value to output
-        output += f' - {key.capitalize()}: {value}\n'
-    output += f'Total Votes:\n'
-    for key, value in totalVotes.items(): #iterate over dict and add each value to output
-        output += f' - {key.capitalize()}: {value}\n'
-    output += f'Reputation Score: {reputation}\n' #add score to output
-    output += f'Creation Date: {creationDate}' #add creation date to output
-    print(output) #print the domain report
+    
+    if response.status_code == 200: #successful response
+        data = response.json() #represents a dict that includes info from domain report
+        #these are parameters we're interested in for our domian report
+        lastAysStats = data['data']['attributes'].get('last_analysis_stats') #represents the amount of browsers flagged the doamin as malicious or harmless etc.
+        totalVotes = data['data']['attributes'].get('total_votes') #represents total votes (malicious or harmless) for the domain by VirusTotal commuinty
+        reputation = data['data']['attributes'].get('reputation') #represents the reputation of the website (if higher number it means its safe)
+        creationDate = toDatetime(data['data']['attributes'].get('creation_date')) #represents domian's date of creation 
+        return {'domain': domain, 'lastAysStats': lastAysStats, 'totalVotes': totalVotes, 'reputation': reputation, 'creationDate': creationDate} #return dictionary of domain report 
+    else: #other status codes mean we failed to retrive domain report, maybe due to rate limit (4 requests per minute)
+        return {} #return empty dictionary 
     
  
+#Function that prints domain report from given report dictionary
+def printDomainReport(reportDict):
+    if reportDict:
+        output = f'Domain Name: \033[93m{reportDict['domain']}\033[0m\n' #add domain name to output
+        output += f'Last Analysis Stats:\n' #add analysis stats 
+        for key, value in reportDict['lastAysStats'].items(): #iterate over dict and add each value to output
+            output += f' - {key.capitalize()}: {value}\n'
+        output += f'Total Votes:\n'
+        for key, value in reportDict['totalVotes'].items(): #iterate over dict and add each value to output
+            output += f' - {key.capitalize()}: {value}\n'
+        output += f'Reputation Score: {reportDict['reputation']}\n' #add score to output
+        output += f'Creation Date: {reportDict['creationDate']}' #add creation date to output
+        print(output) #print the domain report
+        
+        #check status of domain and show user message about it
+        if reportDict['lastAysStats']['malicious'] > 0 and checkDatetime(reportDict['creationDate']): #means domain was flagged as malicious and was created recently
+            printMessage(f'The domian "{reportDict['domain']}" has been reported as malicious and was created recently.', 'warning')
+        elif reportDict['lastAysStats']['suspicious'] > 0 and checkDatetime(reportDict['creationDate']): #means domain was flagged as suspicious and was created recently
+            printMessage(f'The domian "{reportDict['domain']}" has been reported as suspicious and was created recently.', 'warning')
+        elif reportDict['lastAysStats']['malicious'] > 0: #means domain was flagged as malicious
+            printMessage(f'The domian "{reportDict['domain']}" has been reported as malicious.', 'warning')
+        elif reportDict['lastAysStats']['suspicious'] > 0: #means domain was flagged as suspicious
+            printMessage(f'The domian "{reportDict['domain']}" has been reported as suspicious.', 'warning')
+        elif checkDatetime(reportDict['creationDate']): #means domian was created recently
+            printMessage(f'The domian "{reportDict['domain']}" was created recently.', 'warning')
+        else: #else domain has no known malicious activity 
+            printMessage(f'The domian "{reportDict['domain']}" has no reported malicious activity.', 'info')
+    else:
+        printMessage(f'Could not fetch domain report, please try again later.', 'fail') #show error message if dict is empty, means we didn't receive info from virusTotal
+
+
 
 def main():    
     print("""
@@ -285,7 +325,7 @@ def main():
 """)
 
     print('DNS Hijacking Detection\n') #print name of program
-    #getDomainReport('www.reddit.com')
+    #printDomainReport(getDomainReport('www.reddit.com'))
     #print(isCommand('ipconfig \all'))
     while True:
         print('Please choose desired operation:\n')
