@@ -163,7 +163,7 @@ def sendDNSPackets():
 
 #Function for sending random DNS TXT response packets for simulating attack
 def sendRandomDNSPackets():
-    suspiciousDomains = [('3.141.96.53', 'news-spot.live'), ('172.67.154.10', 'onerecycleclub.com'), ('35.186.223.180', 'todaysport.live'), ('34.98.99.30', 'microsoft-security-updates.com')] #list represents domains that are known to be malicious
+    suspiciousDomains = [('3.141.96.53', 'news-spot.live'), ('172.67.154.10', 'onerecycleclub.com'), ('35.186.223.180', 'todaysport.live'), ('172.67.131.239', 'inpsct.top')] #list represents domains that are known to be malicious
     suspiciousResponses = ['bmV0c2ggaW50ZXJmYWNlIGlwIHNob3cgZG5zc2VydmVycw==', 'ipconfig /flushdns', 'netsh interface ipv4 show dns', 'bmV0c2ggaW50ZXJmYWNlIGlwdjQgZGVsZXRlIGRuc3NlcnZlciAiRXRoZXJuZXQiIDE5Mi4xNjguMS4x'] #list represents suspicious data that isn't typical in dns txt packets
     print('DNS Response Traffic Simulator\n')
     destinationIp = input('Enter destination IP: ')
@@ -209,7 +209,7 @@ def toDatetime(timestamp):
 def checkDatetime(date):
     if date is not None:
         currentDate = datetime.datetime.now() #represents current date
-        previousDate = currentDate - datetime.timedelta(days=365*2) #represents the date two years ago
+        previousDate = currentDate - datetime.timedelta(days=365) #represents the date one year ago
         return date > previousDate #return if given date was created recently
     return False
  
@@ -325,7 +325,7 @@ def main():
 """)
 
     print('DNS Hijacking Detection\n') #print name of program
-    #printDomainReport(getDomainReport('www.reddit.com'))
+    #printDomainReport(getDomainReport('reddit.com'))
     #print(isCommand('ipconfig \all'))
     while True:
         print('Please choose desired operation:\n')
