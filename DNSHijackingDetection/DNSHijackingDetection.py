@@ -58,9 +58,9 @@ class DNSSniffer():
                 dstIp = packet[IP].dst #save packet destination port
                 srcPort = packet.sport #save packet source ip
                 dstPort = packet.dport #save packet destination port
-            if dnsPacket.qr == 1 and dnsPacket.an and dnsPacket.an.type == 16: #we check if the packet is response packet and that its type is 16 (means its a TXT record)
+            if dnsPacket.qr == 1 and dnsPacket.an and dnsPacket.an.type == 16: #we check if the packet is response packet if qr is 1 and that its type is 16 (means its a TXT record)
                 dktId = dnsPacket.id #save id of packet
-                responseName = toString(dnsPacket.an.rrname) #save repsonse name of packet
+                responseName = toString(dnsPacket.an.rrname) #save repsonse name of packet (domain)
                 responseType = 'TXT' #save response type of packet
                 responseClass = DNSClassTypes[dnsPacket.an.rclass] if dnsPacket.an.rclass in DNSClassTypes else dnsPacket.an.rclass #save the class type from dict 
                 numResponses = len(dnsPacket.an) #save number of responses of packet
@@ -199,7 +199,7 @@ def toString(data):
             
 
 #Function to convert from timestamp to a date (from virusTotal api)
-def toDatetime(timestamp):
+def toDatetime(timestamp): 
     if timestamp is not None:
         return datetime.datetime.fromtimestamp(timestamp) #return the date with datetime function
     return None
