@@ -237,13 +237,13 @@ def isBase64(dataStr):
 def isCommand(dataStr):
     windowsCommands = [
         #Common CMD Commands
-        'dir', 'cd', 'md', 'mkdir', 'rd', 'rmdir', 'copy', 'move', 'del', 'ren', 'echo', 'type', 'cls', 'taskkill'
-        'ping', 'tracert', 'ipconfig', 'whoami', 'systeminfo' 'netstat', 'tasklist', 'netsh', 'nslookup', 'start'
+        'dir', 'cd', 'md', 'mkdir', 'rd', 'rmdir', 'copy', 'move', 'del', 'ren', 'echo', 'type', 'cls', 'taskkill',
+        'ping', 'tracert', 'ipconfig', 'whoami', 'systeminfo', 'netstat', 'tasklist', 'netsh', 'nslookup', 'start',
     
         #Common PowerShell Commands
         'Get-ChildItem', 'Set-Location', 'New-Item', 'Remove-Item', 'Copy-Item', 'Move-Item', 'Remove-Item', 
         'Rename-Item', 'Write-Output', 'Get-Content', 'Clear-Host', 'Test-Connection', 'Get-NetIPAddress',
-        'Get-NetTCPConnection','Get-Process', 'Start-Process' 'Stop-Process'
+        'Get-NetTCPConnection','Get-Process', 'Start-Process', 'Stop-Process',
     
         #DNS-related Commands
         'netsh interface ipv4 show dns', 
