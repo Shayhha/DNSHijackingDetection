@@ -233,7 +233,7 @@ def isBase64(dataStr):
         return False
     
 
-#Function for checking if given string contains a valid cmd/shell command
+#Function for checking if given string contains a valid cmd/powershell command
 def isCommand(dataStr):
     windowsCommands = [
         #Common CMD Commands
