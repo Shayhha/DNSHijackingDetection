@@ -325,7 +325,7 @@ def main():
 
     print('DNS Hijacking Detection\n') #print name of program
     #printDomainReport(getDomainReport('reddit.com'))
-    #print(isCommand('ipconfig \all'))
+    #print(isCommand('ipconfig /all'))
     while True:
         print('Please choose desired operation:\n')
         print('[1] Scan for DNS hijacking attacks.')
