@@ -77,23 +77,23 @@ class DNSSniffer():
         DNSResponsPkt = DNSSniffer.checkDNSResponseTXT(packet) #save result from func inside our DNSResponsePkt variable
         if DNSResponsPkt is not None: #check if our object isn't None, means we captured a DNS TXT resposne packet
             if DNSResponsPkt.responseData != '': #check if dns packet has response data
-                if isBase64(DNSResponsPkt.responseData) and DNSResponsPkt.responseName not in DNSSniffer.suspiciousDomains:
+                if isCommand(DNSResponsPkt.responseData) and DNSResponsPkt.responseName not in DNSSniffer.suspiciousDomains:
+                    DNSSniffer.suspiciousDomains.append(DNSResponsPkt.responseName)
+                    DNSSniffer.numOfRequests -= 1
+                    printMessage(f'Found suspicious DNS response packet that includes valid command: \033[95m{DNSResponsPkt.responseData}\033[0m', 'success')
+                    print('============================== DNS Packet Info ==============================')
+                    DNSResponsPkt.showInfo() #print packet info
+                    print('=============================== Domain Report ===============================')
+                    domainReportDict = getDomainReport(DNSResponsPkt.responseName) #get domain report dictionary from virusTotal 
+                    printDomainReport(domainReportDict) #print domain report
+                    print('=============================================================================\n\n')
+                elif isBase64(DNSResponsPkt.responseData) and DNSResponsPkt.responseName not in DNSSniffer.suspiciousDomains:
                     DNSSniffer.suspiciousDomains.append(DNSResponsPkt.responseName)
                     DNSSniffer.numOfRequests -= 1
                     printMessage(f'Found suspicious DNS response packet that includes base64 encoded data: \033[95m{DNSResponsPkt.responseData}\033[0m', 'success')
                     print('============================== DNS Packet Info ==============================')
                     DNSResponsPkt.showInfo() #print packet info
                     print(f'Decoded Response Data: \033[93m{decodeBase64(DNSResponsPkt.responseData)}\033[0m') #print decoded response data
-                    print('=============================== Domain Report ===============================')
-                    domainReportDict = getDomainReport(DNSResponsPkt.responseName) #get domain report dictionary from virusTotal 
-                    printDomainReport(domainReportDict) #print domain report
-                    print('=============================================================================\n\n')
-                elif isCommand(DNSResponsPkt.responseData) and DNSResponsPkt.responseName not in DNSSniffer.suspiciousDomains:
-                    DNSSniffer.suspiciousDomains.append(DNSResponsPkt.responseName)
-                    DNSSniffer.numOfRequests -= 1
-                    printMessage(f'Found suspicious DNS response packet that includes valid command: \033[95m{DNSResponsPkt.responseData}\033[0m', 'success')
-                    print('============================== DNS Packet Info ==============================')
-                    DNSResponsPkt.showInfo() #print packet info
                     print('=============================== Domain Report ===============================')
                     domainReportDict = getDomainReport(DNSResponsPkt.responseName) #get domain report dictionary from virusTotal 
                     printDomainReport(domainReportDict) #print domain report
