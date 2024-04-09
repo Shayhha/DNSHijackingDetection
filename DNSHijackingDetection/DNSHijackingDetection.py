@@ -217,9 +217,12 @@ def checkDatetime(date):
 #Function for decoding base64 string
 def decodeBase64(dataStr):
     try:
-        decodedStr = base64.b64decode(dataStr).decode('utf-8') #decode the base64 string
-        return decodedStr #return decoded string
-    except Exception as e: #if exception is thrown
+        decodedBytes = base64.b64decode(dataStr) #decode the base64 string
+        try:
+            return decodedBytes.decode('utf-8') #try to decode to utf-8
+        except UnicodeDecodeError: #if failed decoding to utf-8
+            return decodedBytes #return the raw bytes
+    except Exception as e: #if exception is thrown while decoding
         return f'Error decoding base64 string: {str(e)}' #return an error
     
 
