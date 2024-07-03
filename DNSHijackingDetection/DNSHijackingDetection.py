@@ -193,8 +193,7 @@ def toString(data):
             data = ', '.join(item.decode('utf-8', 'replace') if isinstance(item, bytes) else str(item) for item in data) #decode the list into string
         elif isinstance(data, bytes): #if given data is byte we convert it to utf-8 string
             data = data.decode('utf-8', 'replace') #decode the byte to string
-        if data.endswith('.'): #check if the string ends with '.'
-            data = data[:-1]  #remove the trailing dot
+        data = data.rstrip('.') #remove the trailing dot
     return data
             
 
