@@ -58,16 +58,16 @@ class DNSSniffer():
                 dstIp = packet[IP].dst #save packet destination port
                 srcPort = packet.sport #save packet source ip
                 dstPort = packet.dport #save packet destination port
-            if dnsPacket.qr == 1 and dnsPacket.an and dnsPacket.an.type == 16: #we check if the packet is response packet if qr is 1 and that its type is 16 (means its a TXT record)
-                dktId = dnsPacket.id #save id of packet
-                responseName = toString(dnsPacket.an.rrname) #save repsonse name of packet (domain)
+            if dnsPacket.qr == 1 and dnsPacket.an and dnsPacket.an[0].type == 16: #we check if the packet is response packet if qr is 1 and that its type is 16 (means its a TXT record)
+                pktId = dnsPacket.id #save id of packet
+                responseName = toString(dnsPacket.an[0].rrname) #save repsonse name of packet (domain)
                 responseType = 'TXT' #save response type of packet
-                responseClass = DNSClassTypes[dnsPacket.an.rclass] if dnsPacket.an.rclass in DNSClassTypes else dnsPacket.an.rclass #save the class type from dict 
-                numResponses = len(dnsPacket.an) #save number of responses of packet
+                responseClass = DNSClassTypes[dnsPacket.an[0].rclass] if dnsPacket.an[0].rclass in DNSClassTypes else dnsPacket.an[0].rclass #save the class type from dict 
+                numResponses = dnsPacket.ancount #save number of responses of packet
                 responseData = '' #save reponse data from the packet's payload 
-                if hasattr(dnsPacket.an, 'rdata'): #check if rdata attribute exists
-                    responseData += toString(dnsPacket.an.rdata) #add the data from the payload from rdata parameter 
-                return DNSResponse(srcIp, dstIp, srcPort, dstPort, dktId, responseName, responseType, responseClass, numResponses, responseData) #return DNSResponse object if we successfully find one
+                if hasattr(dnsPacket.an[0], 'rdata'): #check if rdata attribute exists
+                    responseData += toString(dnsPacket.an[0].rdata) #add the data from the payload from rdata parameter 
+                return DNSResponse(srcIp, dstIp, srcPort, dstPort, pktId, responseName, responseType, responseClass, numResponses, responseData) #return DNSResponse object if we successfully find one
         return None #else we return none indicating that we didn't find a DNS TXT response packet
 
 
@@ -193,8 +193,7 @@ def toString(data):
             data = ', '.join(item.decode('utf-8', 'replace') if isinstance(item, bytes) else str(item) for item in data) #decode the list into string
         elif isinstance(data, bytes): #if given data is byte we convert it to utf-8 string
             data = data.decode('utf-8', 'replace') #decode the byte to string
-        if data.endswith('.'): #check if the string ends with '.'
-            data = data[:-1]  #remove the trailing dot
+        data = data.rstrip('.') #remove the trailing dot
     return data
             
 
