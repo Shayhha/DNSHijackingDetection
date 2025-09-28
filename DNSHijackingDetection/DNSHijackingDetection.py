@@ -1,9 +1,8 @@
-import re
-import base64
-import datetime
-import requests
+import sys, os, re, base64, datetime, requests
+from dotenv import load_dotenv
 from scapy.all import TCP, UDP, IP, DNS, DNSQR, DNSRR, send, sniff
 
+currentDir = os.path.dirname(os.path.abspath(__file__)) #represents current directory
 
 #=================================================================DNSResponse================================================================#
 
@@ -23,7 +22,7 @@ class DNSResponse():
         self.responseData = responseData
         
     #Method for printing info of DNS response packet
-    def showInfo(self):
+    def ShowInfo(self):
         output = f'Type: DNS Response\n' #type of packet
         output += f'Source IP: {self.srcIp} | Port: {self.srcPort}\n' #source ip and port
         output += f'Destination IP: {self.dstIp} | Port: {self.dstPort}\n' #destination ip and port
@@ -48,7 +47,7 @@ class DNSSniffer():
 
     #Function for checking if given packet is DNS response TXT packet
     @staticmethod        
-    def checkDNSResponseTXT(packet):
+    def CheckDNSResponseTXT(packet):
         DNSClassTypes = {1: 'IN', 2: 'CS', 3: 'CH', 4: 'HS', 255: 'ANY'} #dict that holdes the values for dns class types
         #We're interested in packets with a DNS response layer and of type TXT record
         if DNS in packet: #check if packet is DNS packet
@@ -58,56 +57,56 @@ class DNSSniffer():
                 dstIp = packet[IP].dst #save packet destination port
                 srcPort = packet.sport #save packet source ip
                 dstPort = packet.dport #save packet destination port
-            if dnsPacket.qr == 1 and dnsPacket.an and dnsPacket.an.type == 16: #we check if the packet is response packet if qr is 1 and that its type is 16 (means its a TXT record)
-                dktId = dnsPacket.id #save id of packet
-                responseName = toString(dnsPacket.an.rrname) #save repsonse name of packet (domain)
+            if dnsPacket.qr == 1 and dnsPacket.an and dnsPacket.an[0].type == 16: #we check if the packet is response packet if qr is 1 and that its type is 16 (means its a TXT record)
+                pktId = dnsPacket.id #save id of packet
+                responseName = ToString(dnsPacket.an[0].rrname) #save repsonse name of packet (domain)
                 responseType = 'TXT' #save response type of packet
-                responseClass = DNSClassTypes[dnsPacket.an.rclass] if dnsPacket.an.rclass in DNSClassTypes else dnsPacket.an.rclass #save the class type from dict 
-                numResponses = len(dnsPacket.an) #save number of responses of packet
+                responseClass = DNSClassTypes[dnsPacket.an[0].rclass] if dnsPacket.an[0].rclass in DNSClassTypes else dnsPacket.an[0].rclass #save the class type from dict 
+                numResponses = dnsPacket.ancount #save number of responses of packet
                 responseData = '' #save reponse data from the packet's payload 
-                if hasattr(dnsPacket.an, 'rdata'): #check if rdata attribute exists
-                    responseData += toString(dnsPacket.an.rdata) #add the data from the payload from rdata parameter 
-                return DNSResponse(srcIp, dstIp, srcPort, dstPort, dktId, responseName, responseType, responseClass, numResponses, responseData) #return DNSResponse object if we successfully find one
+                if hasattr(dnsPacket.an[0], 'rdata'): #check if rdata attribute exists
+                    responseData += ToString(dnsPacket.an[0].rdata) #add the data from the payload from rdata parameter 
+                return DNSResponse(srcIp, dstIp, srcPort, dstPort, pktId, responseName, responseType, responseClass, numResponses, responseData) #return DNSResponse object if we successfully find one
         return None #else we return none indicating that we didn't find a DNS TXT response packet
 
 
     #Function for sniffing packets and handle our DNS TXT response packets accordingly
     @staticmethod
-    def sniffPackets(packet):
-        DNSResponsPkt = DNSSniffer.checkDNSResponseTXT(packet) #save result from func inside our DNSResponsePkt variable
+    def SniffPackets(packet):
+        DNSResponsPkt = DNSSniffer.CheckDNSResponseTXT(packet) #save result from func inside our DNSResponsePkt variable
         if DNSResponsPkt is not None: #check if our object isn't None, means we captured a DNS TXT resposne packet
             if DNSResponsPkt.responseData != '': #check if dns packet has response data
-                if isCommand(DNSResponsPkt.responseData) and DNSResponsPkt.responseName not in DNSSniffer.suspiciousDomains:
+                if IsCommand(DNSResponsPkt.responseData) and DNSResponsPkt.responseName not in DNSSniffer.suspiciousDomains:
                     DNSSniffer.suspiciousDomains.append(DNSResponsPkt.responseName)
                     DNSSniffer.numOfRequests -= 1
-                    printMessage(f'Found suspicious DNS response packet that includes valid command: \033[95m{DNSResponsPkt.responseData}\033[0m', 'success')
+                    PrintMessage(f'Found suspicious DNS response packet that includes valid command: \033[95m{DNSResponsPkt.responseData}\033[0m', 'success')
                     print('============================== DNS Packet Info ==============================')
-                    DNSResponsPkt.showInfo() #print packet info
+                    DNSResponsPkt.ShowInfo() #print packet info
                     print('=============================== Domain Report ===============================')
-                    domainReportDict = getDomainReport(DNSResponsPkt.responseName) #get domain report dictionary from virusTotal 
-                    printDomainReport(domainReportDict) #print domain report
+                    domainReportDict = GetDomainReport(DNSResponsPkt.responseName) #get domain report dictionary from virusTotal 
+                    PrintDomainReport(domainReportDict) #print domain report
                     print('=============================================================================\n\n')
-                elif isBase64(DNSResponsPkt.responseData) and DNSResponsPkt.responseName not in DNSSniffer.suspiciousDomains:
+                elif IsBase64(DNSResponsPkt.responseData) and DNSResponsPkt.responseName not in DNSSniffer.suspiciousDomains:
                     DNSSniffer.suspiciousDomains.append(DNSResponsPkt.responseName)
                     DNSSniffer.numOfRequests -= 1
-                    printMessage(f'Found suspicious DNS response packet that includes base64 encoded data: \033[95m{DNSResponsPkt.responseData}\033[0m', 'success')
+                    PrintMessage(f'Found suspicious DNS response packet that includes base64 encoded data: \033[95m{DNSResponsPkt.responseData}\033[0m', 'success')
                     print('============================== DNS Packet Info ==============================')
-                    DNSResponsPkt.showInfo() #print packet info
-                    print(f'Decoded Response Data: \033[93m{decodeBase64(DNSResponsPkt.responseData)}\033[0m') #print decoded response data
+                    DNSResponsPkt.ShowInfo() #print packet info
+                    print(f'Decoded Response Data: \033[93m{DecodeBase64(DNSResponsPkt.responseData)}\033[0m') #print decoded response data
                     print('=============================== Domain Report ===============================')
-                    domainReportDict = getDomainReport(DNSResponsPkt.responseName) #get domain report dictionary from virusTotal 
-                    printDomainReport(domainReportDict) #print domain report
+                    domainReportDict = GetDomainReport(DNSResponsPkt.responseName) #get domain report dictionary from virusTotal 
+                    PrintDomainReport(domainReportDict) #print domain report
                     print('=============================================================================\n\n')
          
 
     #Function for checking the state of numOfRequests
     @staticmethod
-    def checkNumOfRequests(packet):
+    def CheckNumOfRequests(packet):
         if DNSSniffer.numOfRequests == 0:
             DNSSniffer.isRunning = False #set isRunning to false
             DNSSniffer.suspiciousDomains.clear() #clear suspiciousDomains list for next scan
             DNSSniffer.numOfRequests = 4 #set the numOfRequests back to 4 for next scan
-            printMessage('Reached maximum capacity of requests for domain report, stopping scan..\n', 'info')
+            PrintMessage('Reached maximum capacity of requests for domain report, stopping scan..\n', 'info')
             return True #return true if numOfRequests is 0 indicating when to stop sniffing
         else:
             return False #else we continue the sniffing
@@ -115,16 +114,16 @@ class DNSSniffer():
 
     #Function for initializing the packet sniffing with desired interface and filter
     @staticmethod
-    def initSniff(interface, sniffFilter):
+    def InitSniff(interface, sniffFilter):
         if interface == '' or sniffFilter == '': #means that there's an error in the input
-            printMessage('Please provide valid interface and filter for scan.\n', 'fail') #print that interface or filter are incorrect
+            PrintMessage('Please provide valid interface and filter for scan.\n', 'fail') #print that interface or filter are incorrect
         elif DNSSniffer.isRunning: #means that a scan is currently running 
-            printMessage('Cannot initialize scan before current scan finishes.\n', 'fail') #print that scan cannot be initialized
+            PrintMessage('Cannot initialize scan before current scan finishes.\n', 'fail') #print that scan cannot be initialized
         else: #else we can proceed with initializing the scan
-            printMessage('Scanning for potential DNS hijacking traffic..\n', 'info') #print that scan is being initialized
+            PrintMessage('Scanning for potential DNS hijacking traffic..\n', 'info') #print that scan is being initialized
             DNSSniffer.isRunning = True #set isRunning to true indicating that sniffer in progress
             #start the sniffing with sniff method from scapy with desired parameters and stop  filter set to our method
-            sniff(iface=interface, prn=DNSSniffer.sniffPackets, filter=sniffFilter, stop_filter=DNSSniffer.checkNumOfRequests, store=0)
+            sniff(iface=interface, prn=DNSSniffer.SniffPackets, filter=sniffFilter, stop_filter=DNSSniffer.CheckNumOfRequests, store=0)
             
 
 #=================================================================DNSSniffer-END================================================================#
@@ -132,7 +131,7 @@ class DNSSniffer():
 #=================================================================HelperFunctions================================================================#
 
 #Function for crafting DNS TXT response packet
-def sendDNSTXTResponse(sourceIp, destinationIp, queryDomain, txtResponse):
+def SendDNSTXTResponse(sourceIp, destinationIp, queryDomain, txtResponse):
     dnsResponse = IP(src=sourceIp, dst=destinationIp)/UDP(dport=53)/DNS(
         id=1000, #Packet ID
         qr=1,  #Response packet
@@ -146,7 +145,7 @@ def sendDNSTXTResponse(sourceIp, destinationIp, queryDomain, txtResponse):
     
 
 #Function for sending DNS TXT response packets for simulating attack
-def sendDNSPackets():
+def SendDNSPackets():
     print('DNS Response Traffic Simulator\n')
     sourceIp = input('Enter source IP: ')
     destinationIp = input('Enter destination IP: ')
@@ -154,28 +153,28 @@ def sendDNSPackets():
     txtResponse = input('Enter TXT response: ')
     numPackets = int(input('Enter number of packets to send: '))
     
-    printMessage('Sending DNS response packets...', 'info')
+    PrintMessage('Sending DNS response packets...', 'info')
     for i in range(numPackets): #send packets in a loop
-        sendDNSTXTResponse(sourceIp, destinationIp, queryDomain, txtResponse) #call our fucntion to send the packet
-        printMessage(f'DNS packet no. {i + 1} sent..', 'info')
-    printMessage('Finished sending DNS packets.', 'success')
+        SendDNSTXTResponse(sourceIp, destinationIp, queryDomain, txtResponse) #call our fucntion to send the packet
+        PrintMessage(f'DNS packet no. {i + 1} sent..', 'info')
+    PrintMessage('Finished sending DNS packets.', 'success')
     
 
 #Function for sending random DNS TXT response packets for simulating attack
-def sendRandomDNSPackets():
+def SendRandomDNSPackets():
     suspiciousDomains = [('3.141.96.53', 'news-spot.live'), ('172.67.154.10', 'onerecycleclub.com'), ('35.186.223.180', 'todaysport.live'), ('172.67.131.239', 'inpsct.top')] #list represents domains that are known to be malicious
     suspiciousResponses = ['bmV0c2ggaW50ZXJmYWNlIGlwIHNob3cgZG5zc2VydmVycw==', 'ipconfig /flushdns', 'netsh interface ipv4 show dns', 'bmV0c2ggaW50ZXJmYWNlIGlwdjQgZGVsZXRlIGRuc3NlcnZlciAiRXRoZXJuZXQiIDE5Mi4xNjguMS4x'] #list represents suspicious data that isn't typical in dns txt packets
     print('DNS Response Traffic Simulator\n')
     destinationIp = input('Enter destination IP: ')
-    printMessage('Sending random DNS response packets...', 'info')
+    PrintMessage('Sending random DNS response packets...', 'info')
     for i, (domain, response) in enumerate(zip(suspiciousDomains, suspiciousResponses)): #iterate over both lists to send packets
-        sendDNSTXTResponse(domain[0], destinationIp, domain[1], response) #call our fucntion to send the packet
-        printMessage(f'DNS packet no. {i + 1} sent..', 'info')
-    printMessage('Finished sending DNS packets.', 'success')
+        SendDNSTXTResponse(domain[0], destinationIp, domain[1], response) #call our fucntion to send the packet
+        PrintMessage(f'DNS packet no. {i + 1} sent..', 'info')
+    PrintMessage('Finished sending DNS packets.', 'success')
     
 
 #Function for printing messages to console
-def printMessage(strData, msgType='info'):
+def PrintMessage(strData, msgType='info'):
     if msgType == 'info':
         print(f'\033[94m[*]\033[0m {strData}')
     elif msgType == 'success':
@@ -187,26 +186,25 @@ def printMessage(strData, msgType='info'):
         
 
 #Function for converting a data type like list or byte to string
-def toString(data): 
+def ToString(data): 
     if data is not None: #if data not none we continue
         if isinstance(data, list): #if given data is list we convert it to utf-8 string
             data = ', '.join(item.decode('utf-8', 'replace') if isinstance(item, bytes) else str(item) for item in data) #decode the list into string
         elif isinstance(data, bytes): #if given data is byte we convert it to utf-8 string
             data = data.decode('utf-8', 'replace') #decode the byte to string
-        if data.endswith('.'): #check if the string ends with '.'
-            data = data[:-1]  #remove the trailing dot
+        data = data.rstrip('.') #remove the trailing dot
     return data
             
 
 #Function to convert from timestamp to a date (from virusTotal api)
-def toDatetime(timestamp): 
+def ToDatetime(timestamp): 
     if timestamp is not None:
         return datetime.datetime.fromtimestamp(timestamp) #return the date with datetime function
     return None
 
 
 #Function for checking if given date has been created recently
-def checkDatetime(date):
+def CheckDatetime(date):
     if date is not None:
         currentDate = datetime.datetime.now() #represents current date
         previousDate = currentDate - datetime.timedelta(days=365) #represents the date one year ago
@@ -215,7 +213,7 @@ def checkDatetime(date):
  
 
 #Function for decoding base64 string
-def decodeBase64(dataStr):
+def DecodeBase64(dataStr):
     try:
         decodedBytes = base64.b64decode(dataStr) #decode the base64 string
         try:
@@ -227,7 +225,7 @@ def decodeBase64(dataStr):
     
 
 #Function for checking if the given string is encoded in base64
-def isBase64(dataStr):
+def IsBase64(dataStr):
     base64Regex = r'^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$' #regular expression for base64 encoded strings
     match = re.fullmatch(base64Regex, dataStr) #check if the dataStr matches the regular expression of base64
     if match: #if dataStr matches base64 encoded str, we return true
@@ -237,7 +235,7 @@ def isBase64(dataStr):
     
 
 #Function for checking if given string contains a valid cmd/powershell command
-def isCommand(dataStr):
+def IsCommand(dataStr):
     windowsCommands = [
         #Common CMD Commands
         'dir', 'cd', 'md', 'mkdir', 'rd', 'rmdir', 'copy', 'move', 'del', 'ren', 'echo', 'type', 'cls', 'taskkill',
@@ -264,11 +262,15 @@ def isCommand(dataStr):
 
 
 #Function that utilizes VirusTotal api to retrive domain report for a specific domain in interest
-def getDomainReport(domain):
+def GetDomainReport(domain):
+    #load environment variables from env file and retrieve the VirusTotal API key
+    load_dotenv(dotenv_path=os.path.join(currentDir, '.env')) #load .env file
+    virusTotalApiKey = os.getenv('VIRUS_TOTAL_API_KEY') #get the api key from .env file
+
     url = f'https://www.virustotal.com/api/v3/domains/{domain}' #VirusTotal url for domain report
     headers = {
         'accept': 'application/json',
-        'x-apikey': '124ee3170d38cfcf9154796c8ffb8c0faad6381592bd612a5c84932e3cf543a7' #VirusTotal api key
+        'x-apikey': virusTotalApiKey
     }
     response = requests.get(url, headers=headers) #sent the http request to VirusTotal 
     
@@ -278,14 +280,14 @@ def getDomainReport(domain):
         lastAysStats = data['data']['attributes'].get('last_analysis_stats') #represents the amount of browsers flagged the doamin as malicious or harmless etc.
         totalVotes = data['data']['attributes'].get('total_votes') #represents total votes (malicious or harmless) for the domain by VirusTotal commuinty
         reputation = data['data']['attributes'].get('reputation') #represents the reputation of the website (if higher number it means its safe)
-        creationDate = toDatetime(data['data']['attributes'].get('creation_date')) #represents domian's date of creation 
+        creationDate = ToDatetime(data['data']['attributes'].get('creation_date')) #represents domian's date of creation 
         return {'domain': domain, 'lastAysStats': lastAysStats, 'totalVotes': totalVotes, 'reputation': reputation, 'creationDate': creationDate} #return dictionary of domain report 
     else: #other status codes mean we failed to retrive domain report, maybe due to rate limit (4 requests per minute)
         return {} #return empty dictionary 
     
  
 #Function that prints domain report from given report dictionary
-def printDomainReport(reportDict):
+def PrintDomainReport(reportDict):
     if reportDict:
         output = f'Domain Name: \033[93m{reportDict['domain']}\033[0m\n' #add domain name to output
         output += f'Last Analysis Stats:\n' #add analysis stats 
@@ -299,36 +301,36 @@ def printDomainReport(reportDict):
         print(output) #print the domain report
         
         #check status of domain and show user message about it
-        if reportDict['lastAysStats']['malicious'] > 0 and checkDatetime(reportDict['creationDate']): #means domain was flagged as malicious and was created recently
-            printMessage(f'The domian "{reportDict['domain']}" has been reported as malicious and was created recently.', 'warning')
-        elif reportDict['lastAysStats']['suspicious'] > 0 and checkDatetime(reportDict['creationDate']): #means domain was flagged as suspicious and was created recently
-            printMessage(f'The domian "{reportDict['domain']}" has been reported as suspicious and was created recently.', 'warning')
+        if reportDict['lastAysStats']['malicious'] > 0 and CheckDatetime(reportDict['creationDate']): #means domain was flagged as malicious and was created recently
+            PrintMessage(f'The domian "{reportDict['domain']}" has been reported as malicious and was created recently.', 'warning')
+        elif reportDict['lastAysStats']['suspicious'] > 0 and CheckDatetime(reportDict['creationDate']): #means domain was flagged as suspicious and was created recently
+            PrintMessage(f'The domian "{reportDict['domain']}" has been reported as suspicious and was created recently.', 'warning')
         elif reportDict['lastAysStats']['malicious'] > 0: #means domain was flagged as malicious
-            printMessage(f'The domian "{reportDict['domain']}" has been reported as malicious.', 'warning')
+            PrintMessage(f'The domian "{reportDict['domain']}" has been reported as malicious.', 'warning')
         elif reportDict['lastAysStats']['suspicious'] > 0: #means domain was flagged as suspicious
-            printMessage(f'The domian "{reportDict['domain']}" has been reported as suspicious.', 'warning')
-        elif checkDatetime(reportDict['creationDate']): #means domian was created recently
-            printMessage(f'The domian "{reportDict['domain']}" was created recently.', 'warning')
+            PrintMessage(f'The domian "{reportDict['domain']}" has been reported as suspicious.', 'warning')
+        elif CheckDatetime(reportDict['creationDate']): #means domian was created recently
+            PrintMessage(f'The domian "{reportDict['domain']}" was created recently.', 'warning')
         else: #else domain has no known malicious activity 
-            printMessage(f'The domian "{reportDict['domain']}" has no reported malicious activity.', 'info')
+            PrintMessage(f'The domian "{reportDict['domain']}" has no reported malicious activity.', 'info')
     else:
-        printMessage(f'Could not fetch domain report, please try again later.', 'fail') #show error message if dict is empty, means we didn't receive info from virusTotal
+        PrintMessage(f'Could not fetch domain report, please try again later.', 'fail') #show error message if dict is empty, means we didn't receive info from virusTotal
 
 
 
 def main():    
-    print("""
+    print('''
  ____  _   _ ____    _   _ _  _            _    _             
 |  _ \\| \\ | / ___|  | | | (_)(_) __ _  ___| | _(_)_ __   __ _ 
 | | | |  \\| \\___ \\  | |_| | || |/ _` |/ __| |/ / | '_ \\ / _` |
 | |_| | |\\  |___) | |  _  | || | (_| | (__|   <| | | | | (_| |
 |____/|_| \\_|____/  |_| |_|_|/ |\\__,_|\\___|_|\\_\\_|_| |_|\\__, |
                            |__/                         |___/ 
-""")
+''')
 
     print('DNS Hijacking Detection\n') #print name of program
-    #printDomainReport(getDomainReport('reddit.com'))
-    #print(isCommand('ipconfig /all'))
+    #PrintDomainReport(GetDomainReport('reddit.com'))
+    #print(IsCommand('ipconfig /all'))
     while True:
         print('Please choose desired operation:\n')
         print('[1] Scan for DNS hijacking attacks.')
@@ -338,19 +340,19 @@ def main():
         choice = input('Enter your choice: ')
         print('')
         if choice == '1':
-            DNSSniffer.initSniff('Ethernet', 'udp port 53') #start the scan for DNS response packets
+            DNSSniffer.InitSniff('Ethernet', 'udp port 53') #start the scan for DNS response packets
             print('')
         elif choice == '2':
-            sendDNSPackets() #call our function to send custom DNS response packets 
+            SendDNSPackets() #call our function to send custom DNS response packets 
             print('')
         elif choice == '3':
-            sendRandomDNSPackets() #call our function to send random DNS response packets 
+            SendRandomDNSPackets() #call our function to send random DNS response packets 
             print('')
         elif choice == '4':
-            print('Exiting...')
+            print('Exiting.')
             break
         else:
-            printMessage('Invalid choice, Please try again.\n', 'fail')
+            PrintMessage('Invalid choice, Please try again.\n', 'fail')
 
 if __name__ == '__main__':
     main()
